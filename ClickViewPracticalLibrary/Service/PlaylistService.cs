@@ -188,9 +188,20 @@ namespace ClickViewPracticalLibrary.Service
             return _store.GetVideos(new VideoPlaylistFilter { Ids = existingPlayList.VideoIds});
         }
 
+        public List<Playlist> GetAllPlaylistsForVideo(int videoId)
+        {
+            if(videoId <= 0)
+            {
+                LogError("Video ID less than 0", nameof(GetAllPlaylistsForVideo));
+                return new List<Playlist>();
+            }
+
+            return _store.GetPlaylists(new PlaylistFilter { VideoId = videoId });
+        }
+
         public List<Playlist> GetAllPlaylists()
         {
-            return _store.GetPlaylists(new VideoPlaylistFilter());
+            return _store.GetPlaylists(new PlaylistFilter());
         }
 
         public List<Video> GetAllVideos()

@@ -6,7 +6,7 @@ namespace ClickViewPracticalLibrary.Service
     public interface IPlaylistStore
     {
 
-        public List<Playlist> GetPlaylists(VideoPlaylistFilter filter);
+        public List<Playlist> GetPlaylists(PlaylistFilter filter);
 
         public List<Video> GetVideos(VideoPlaylistFilter filter);
 

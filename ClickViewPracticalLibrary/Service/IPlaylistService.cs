@@ -18,5 +18,7 @@ namespace ClickViewPracticalLibrary.Service
         public Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(int playlistId, int videoId);
 
         public List<Video> GetAllVideosInPlaylist(int playlistId);
+
+        public List<Playlist> GetAllPlaylistsForVideo(int video);
     }
 }
