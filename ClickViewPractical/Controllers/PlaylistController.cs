@@ -9,26 +9,20 @@ namespace ClickViewPractical.Controllers
     public class PlaylistController : ControllerBase
     {
         private readonly ILogger<PlaylistController> _logger;
-        private readonly PlaylistLoader _playListLoader;
+        private readonly IPlaylistService _playlistService;
 
-        public PlaylistController(ILogger<PlaylistController> logger, PlaylistLoader playlistLoader)
+        public PlaylistController(ILogger<PlaylistController> logger, IPlaylistService playlistService)
         {
             _logger = logger;
-            _playListLoader = playlistLoader;
+            _playlistService = playlistService;
         }
 
-        [HttpGet]
-        [Route("GetPlaylists")]
-        public List<Playlist> GetPlaylists()
-        {
-            return _playListLoader.Playlists;
-        }
 
-        [HttpGet]
-        [Route("GetVideos")]
-        public List<Video> GetVideos()
+        [HttpPost]
+        [Route("CreatePlaylist")]
+        public bool GetPlaylists(Playlist playlist)
         {
-            return _playListLoader.Videos;
+            return _playlistService.AddPlaylist(playlist);
         }
     }
 }

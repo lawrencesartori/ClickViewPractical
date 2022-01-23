@@ -1,0 +1,9 @@
+﻿using ClickViewPracticalLibrary.Model;
+
+namespace ClickViewPracticalLibrary.Service
+{
+    public interface IPlaylistService
+    {
+        public bool AddPlaylist(Playlist playlist);
+    }
+}
