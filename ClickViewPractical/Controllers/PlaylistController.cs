@@ -46,5 +46,12 @@ namespace ClickViewPractical.Controllers
         {
             return _playlistService.DeletePlaylist(playlistId);
         }
+
+        [HttpPost]
+        [Route("AddVideoToPlaylist/{videoId}/{playlistId}")]
+        public HttpStatusCode AddVideoToPlaylist(int videoId, int playlistId)
+        {
+            return _playlistService.AddVideoToPlaylist(videoId, playlistId);
+        }
     }
 }

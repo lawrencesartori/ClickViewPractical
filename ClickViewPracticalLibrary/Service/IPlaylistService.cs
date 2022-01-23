@@ -12,5 +12,7 @@ namespace ClickViewPracticalLibrary.Service
         public HttpStatusCode UpdatePlaylist(Playlist playlist);
 
         public HttpStatusCode DeletePlaylist(int playlistId);
+
+        public HttpStatusCode AddVideoToPlaylist(int playlistId, int videoId);
     }
 }

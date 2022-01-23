@@ -105,6 +105,38 @@ namespace ClickViewPracticalLibrary.Service
             return HttpStatusCode.OK;
         }
 
+        public HttpStatusCode AddVideoToPlaylist(int videoId, int playlistId)
+        {
+            if(videoId <= 0 || playlistId <= 0)
+            {
+                _log.LogError("Playlist - {playlistId} or Video ID - {videoId} less than 0 for adding to playlist",playlistId,videoId);
+                return HttpStatusCode.BadRequest;
+            }
+
+            var videoToAdd = GetVideoIfExists(videoId);
+            if (videoToAdd == null)
+            {
+                _log.LogError("Video not found for {videoId}", videoId);
+                return HttpStatusCode.NotFound;
+            }
+
+            var existingPlayList = GetPlaylistIfExists(playlistId);
+            if (existingPlayList == null)
+            {
+                _log.LogError("Playlist not found for {playlistId}", playlistId);
+                return HttpStatusCode.NotFound;
+            }
+
+            if (existingPlayList.VideoIds.Contains(videoId))
+            {
+                _log.LogError("Playlist {playlistId} already contains video ID {videoId}", playlistId, videoId);
+                return HttpStatusCode.BadRequest;
+            }
+
+            existingPlayList.VideoIds.Add(videoId);
+            return HttpStatusCode.OK;
+        }
+
         public List<Playlist> GetAllPlaylists()
         {
             return GetPlaylists(new VideoPlaylistFilter());
