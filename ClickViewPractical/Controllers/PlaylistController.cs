@@ -25,6 +25,13 @@ namespace ClickViewPractical.Controllers
             return _playlistService.GetAllPlaylists();
         }
 
+        [HttpGet]
+        [Route("GetAllVideosInPlaylist/{playlistId}")]
+        public List<Video> GetAllVideosInPlaylist(int playlistId)
+        {
+            return _playlistService.GetAllVideosInPlaylist(playlistId);
+        }
+
 
         [HttpPost]
         [Route("CreatePlaylist")]

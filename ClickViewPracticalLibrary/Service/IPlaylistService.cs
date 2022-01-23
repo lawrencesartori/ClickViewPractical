@@ -16,5 +16,7 @@ namespace ClickViewPracticalLibrary.Service
         public HttpStatusCode AddVideoToPlaylist(int playlistId, int videoId);
 
         public HttpStatusCode RemoveVideoFromPlaylist(int playlistId, int videoId);
+
+        public List<Video> GetAllVideosInPlaylist(int playlistId);
     }
 }
