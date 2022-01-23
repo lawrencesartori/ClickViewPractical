@@ -1,13 +1,16 @@
 ﻿using ClickViewPracticalLibrary.Model;
+using System.Net;
 
 namespace ClickViewPracticalLibrary.Service
 {
     public interface IPlaylistService
     {
-        public bool AddPlaylist(Playlist playlist);
+        public HttpStatusCode AddPlaylist(Playlist playlist);
 
         public List<Playlist> GetAllPlaylists();
 
-        public bool UpdatePlaylist(Playlist playlist);
+        public HttpStatusCode UpdatePlaylist(Playlist playlist);
+
+        public HttpStatusCode DeletePlaylist(int playlistId);
     }
 }

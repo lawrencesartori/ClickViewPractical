@@ -1,5 +1,6 @@
 ﻿using ClickViewPracticalLibrary.Model;
 using Microsoft.Extensions.Logging;
+using System.Net;
 
 namespace ClickViewPracticalLibrary.Service
 {
@@ -16,18 +17,18 @@ namespace ClickViewPracticalLibrary.Service
 
 
         //Adds a playlist if it has all valid video ids, id <=0 and a name
-        public bool AddPlaylist(Playlist playlist)
+        public HttpStatusCode AddPlaylist(Playlist playlist)
         {
             if (playlist.ID > 0)
             {
                 _log.LogError("Playlist ID greater than 0");
-                return false;
+                return HttpStatusCode.BadRequest;
             }
 
             if (string.IsNullOrEmpty(playlist.Name))
             {
                 _log.LogError("Playlist name is empty");
-                return false;
+                return HttpStatusCode.BadRequest;
             }
 
             if (playlist.VideoIds.Any())
@@ -37,35 +38,35 @@ namespace ClickViewPracticalLibrary.Service
                 {
                     var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
                     _log.LogError("One of more invalid Video Ids were provided ({invalidIds})",string.Join(',', invalidIds));
-                    return false;
+                    return HttpStatusCode.BadRequest;
                 }
             }
 
             playlist.ID = GetAllPlaylists().Max(o => o.ID) + 1;
             _loader.Playlists.Add(playlist);
-            return true;
+            return HttpStatusCode.OK;
         }
 
         //Update an existing playlist. Must have an id greater than 0, a name and all valid video ids
-        public bool UpdatePlaylist(Playlist playlist)
+        public HttpStatusCode UpdatePlaylist(Playlist playlist)
         {
             if (playlist.ID <= 0)
             {
                 _log.LogError("Playlist ID less than 0 for update");
-                return false;
+                return HttpStatusCode.BadRequest;
             }
 
             if (string.IsNullOrEmpty(playlist.Name))
             {
                 _log.LogError("Playlist name is empty");
-                return false;
+                return HttpStatusCode.BadRequest;
             }
 
             var existingPlayList = GetPlaylistIfExists(playlist.ID);
             if (existingPlayList == null)
             {
                 _log.LogError("Playlist not found for {playlist.ID}",playlist.ID);
-                return false;
+                return HttpStatusCode.NotFound;
             }
 
             if (playlist.VideoIds.Any())
@@ -75,14 +76,33 @@ namespace ClickViewPracticalLibrary.Service
                 {
                     var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
                     _log.LogError("One of more invalid Video Ids were provided ({invalidIds})", string.Join(',', invalidIds));
-                    return false;
+                    return HttpStatusCode.BadRequest;
                 }
             }
 
             existingPlayList.Name = playlist.Name;
             existingPlayList.Description = playlist.Description;
             existingPlayList.VideoIds = playlist.VideoIds;
-            return true;
+            return HttpStatusCode.OK;
+        }
+
+        public HttpStatusCode DeletePlaylist(int playlistId)
+        {
+            if (playlistId <= 0)
+            {
+                _log.LogError("Playlist ID less than 0 for deletion");
+                return HttpStatusCode.BadRequest;
+            }
+
+            var existingPlaylist = GetPlaylistIfExists(playlistId);
+            if(existingPlaylist == null)
+            {
+                _log.LogError("Playlist not found for id {playlistId} for deletion", playlistId);
+                return HttpStatusCode.NotFound;
+            }
+
+            _loader.Playlists.Remove(existingPlaylist);
+            return HttpStatusCode.OK;
         }
 
         public List<Playlist> GetAllPlaylists()

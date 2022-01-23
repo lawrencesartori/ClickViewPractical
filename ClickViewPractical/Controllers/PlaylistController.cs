@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ClickViewPracticalLibrary.Service;
 using ClickViewPracticalLibrary.Model;
+using System.Net;
 
 namespace ClickViewPractical.Controllers
 {
@@ -27,9 +28,23 @@ namespace ClickViewPractical.Controllers
 
         [HttpPost]
         [Route("CreatePlaylist")]
-        public bool GetPlaylists(Playlist playlist)
+        public HttpStatusCode GetPlaylists(Playlist playlist)
         {
             return _playlistService.AddPlaylist(playlist);
+        }
+
+        [HttpPost]
+        [Route("UpdatePlaylist")]
+        public HttpStatusCode UpdatePlaylists(Playlist playlist)
+        {
+            return _playlistService.UpdatePlaylist(playlist);
+        }
+
+        [HttpPost]
+        [Route("DeletePlaylist/{playlistId}")]
+        public HttpStatusCode RemovePlaylist(int playlistId)
+        {
+            return _playlistService.DeletePlaylist(playlistId);
         }
     }
 }
