@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddSingleton<ILoaderConfigManager, LoaderConfigManager>();
 builder.Services.AddSingleton<PlaylistLoader>();
+builder.Services.AddTransient<IPlaylistStore, PlaylistStore>();
 builder.Services.AddTransient<IPlaylistService, PlaylistService>();
 
 var app = builder.Build();

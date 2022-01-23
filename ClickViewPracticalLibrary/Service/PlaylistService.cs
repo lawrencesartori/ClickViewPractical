@@ -6,12 +6,12 @@ namespace ClickViewPracticalLibrary.Service
 {
     public class PlaylistService : IPlaylistService
     {
-        private readonly PlaylistLoader _loader;
+        private readonly IPlaylistStore _store;
         private readonly ILogger<PlaylistService> _log;
 
-        public PlaylistService(PlaylistLoader loader, ILogger<PlaylistService> logger)
+        public PlaylistService(IPlaylistStore store, ILogger<PlaylistService> logger)
         {
-            _loader = loader;
+            _store = store;
             _log = logger;
         }
 
@@ -33,7 +33,7 @@ namespace ClickViewPracticalLibrary.Service
 
             if (playlist.VideoIds.Any())
             {
-                var videos = GetVideos(new VideoPlaylistFilter { Ids = playlist.VideoIds }).Select(o => o.Id).ToList();
+                var videos = _store.GetVideos(new VideoPlaylistFilter { Ids = playlist.VideoIds }).Select(o => o.Id).ToList();
                 if (videos.Count != playlist.VideoIds.Count)
                 {
                     var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
@@ -43,7 +43,7 @@ namespace ClickViewPracticalLibrary.Service
             }
 
             playlist.ID = GetAllPlaylists().Max(o => o.ID) + 1;
-            _loader.Playlists.Add(playlist);
+            _store.AddPlaylist(playlist);
             return HttpStatusCode.OK;
         }
 
@@ -62,7 +62,7 @@ namespace ClickViewPracticalLibrary.Service
                 return HttpStatusCode.BadRequest;
             }
 
-            var existingPlayList = GetPlaylistIfExists(playlist.ID);
+            var existingPlayList = _store.GetPlaylistIfExists(playlist.ID);
             if (existingPlayList == null)
             {
                 LogError($"Playlist not found for {playlist.ID}", nameof(UpdatePlaylist));
@@ -71,7 +71,7 @@ namespace ClickViewPracticalLibrary.Service
 
             if (playlist.VideoIds.Any())
             {
-                var videos = GetVideos(new VideoPlaylistFilter { Ids = playlist.VideoIds }).Select(o => o.Id).ToList();
+                var videos = _store.GetVideos(new VideoPlaylistFilter { Ids = playlist.VideoIds }).Select(o => o.Id).ToList();
                 if (videos.Count != playlist.VideoIds.Count)
                 {
                     var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
@@ -95,14 +95,14 @@ namespace ClickViewPracticalLibrary.Service
                 return HttpStatusCode.BadRequest;
             }
 
-            var existingPlaylist = GetPlaylistIfExists(playlistId);
+            var existingPlaylist = _store.GetPlaylistIfExists(playlistId);
             if(existingPlaylist == null)
             {
                 LogError($"Playlist not found for id {playlistId}", nameof(DeletePlaylist));
                 return HttpStatusCode.NotFound;
             }
 
-            _loader.Playlists.Remove(existingPlaylist);
+            _store.RemovePlaylist(existingPlaylist);
             return HttpStatusCode.OK;
         }
 
@@ -116,14 +116,14 @@ namespace ClickViewPracticalLibrary.Service
                 return HttpStatusCode.BadRequest;
             }
 
-            var videoToAdd = GetVideoIfExists(videoId);
+            var videoToAdd = _store.GetVideoIfExists(videoId);
             if (videoToAdd == null)
             {
                 LogError($"Video not found for {videoId}", nameof(AddVideoToPlaylist));
                 return HttpStatusCode.NotFound;
             }
 
-            var existingPlayList = GetPlaylistIfExists(playlistId);
+            var existingPlayList = _store.GetPlaylistIfExists(playlistId);
             if (existingPlayList == null)
             {
                 LogError($"Playlist not found for {playlistId}", nameof(AddVideoToPlaylist));
@@ -149,7 +149,7 @@ namespace ClickViewPracticalLibrary.Service
                 return HttpStatusCode.BadRequest;
             }
 
-            var existingPlayList = GetPlaylistIfExists(playlistId);
+            var existingPlayList = _store.GetPlaylistIfExists(playlistId);
             if (existingPlayList == null)
             {
                 LogError($"Playlist not found for {playlistId}", nameof(RemoveVideoFromPlaylist));
@@ -175,72 +175,24 @@ namespace ClickViewPracticalLibrary.Service
                 return new List<Video>();
             }
 
-            var existingPlayList = GetPlaylistIfExists(playlistId);
+            var existingPlayList = _store.GetPlaylistIfExists(playlistId);
             if (existingPlayList == null)
             {
                 LogError($"Playlist not found for {playlistId}", nameof(GetAllVideosInPlaylist));
                 return new List<Video>();
             }
 
-            return GetVideos(new VideoPlaylistFilter { Ids = existingPlayList.VideoIds});
+            return _store.GetVideos(new VideoPlaylistFilter { Ids = existingPlayList.VideoIds});
         }
 
         public List<Playlist> GetAllPlaylists()
         {
-            return GetPlaylists(new VideoPlaylistFilter());
+            return _store.GetPlaylists(new VideoPlaylistFilter());
         }
 
         public List<Video> GetAllVideos()
         {
-            return GetVideos(new VideoPlaylistFilter()).ToList();
-        }
-
-        public List<Playlist> GetPlaylists(VideoPlaylistFilter filter)
-        {
-            return GetPlaylistsAsQueryable(filter).ToList();
-        }
-
-        public List<Video> GetVideos(VideoPlaylistFilter filter)
-        {
-            return GetVideosAsQueryable(filter).ToList();
-        }
-
-        private IQueryable<Video> GetVideosAsQueryable(VideoPlaylistFilter filter)
-        {
-            var vids = _loader.Videos.AsQueryable();
-            if(filter.Id > 0)
-            {
-                vids = vids.Where(o => o.Id == filter.Id);
-            }
-            if (filter.Ids != null && filter.Ids.Any())
-            {
-                vids = vids.Where(o => filter.Ids.Contains(o.Id));
-            }
-            return vids;
-        }
-
-        private IQueryable<Playlist> GetPlaylistsAsQueryable(VideoPlaylistFilter filter)
-        {
-            var playLists = _loader.Playlists.AsQueryable();
-            if (filter.Id > 0)
-            {
-                playLists = playLists.Where(o => o.ID == filter.Id);
-            }
-            if (filter.Ids != null && filter.Ids.Any())
-            {
-                playLists = playLists.Where(o => filter.Ids.Contains(o.ID));
-            }
-            return playLists;
-        }
-
-        private Playlist? GetPlaylistIfExists(int id)
-        {
-            return GetPlaylistsAsQueryable(new VideoPlaylistFilter { Id = id}).FirstOrDefault();
-        }
-
-        private Video? GetVideoIfExists(int id)
-        {
-            return GetVideosAsQueryable(new VideoPlaylistFilter { Id = id }).FirstOrDefault();
+            return _store.GetVideos(new VideoPlaylistFilter()).ToList();
         }
 
         private void LogError(string message, string method)
