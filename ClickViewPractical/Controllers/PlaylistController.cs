@@ -35,37 +35,37 @@ namespace ClickViewPractical.Controllers
 
         [HttpPost]
         [Route("CreatePlaylist")]
-        public HttpStatusCode GetPlaylists(Playlist playlist)
+        public async Task<HttpStatusCode> GetPlaylists(Playlist playlist)
         {
-            return _playlistService.AddPlaylist(playlist);
+            return await _playlistService.AddPlaylistAsync(playlist);
         }
 
         [HttpPost]
         [Route("UpdatePlaylist")]
-        public HttpStatusCode UpdatePlaylists(Playlist playlist)
+        public async Task<HttpStatusCode> UpdatePlaylists(Playlist playlist)
         {
-            return _playlistService.UpdatePlaylist(playlist);
+            return await _playlistService.UpdatePlaylistAsync(playlist);
         }
 
         [HttpPost]
         [Route("DeletePlaylist/{playlistId}")]
-        public HttpStatusCode RemovePlaylist(int playlistId)
+        public async Task<HttpStatusCode> RemovePlaylist(int playlistId)
         {
-            return _playlistService.DeletePlaylist(playlistId);
+            return await _playlistService.DeletePlaylistAsync(playlistId);
         }
 
         [HttpPost]
         [Route("AddVideoToPlaylist/{videoId}/{playlistId}")]
-        public HttpStatusCode AddVideoToPlaylist(int videoId, int playlistId)
+        public async Task<HttpStatusCode> AddVideoToPlaylist(int videoId, int playlistId)
         {
-            return _playlistService.AddVideoToPlaylist(videoId, playlistId);
+            return await _playlistService.AddVideoToPlaylistAsync(videoId, playlistId);
         }
 
         [HttpPost]
         [Route("RemoveVideoFromPlaylist/{videoId}/{playlistId}")]
-        public HttpStatusCode RemoveVideoFromPlaylist(int videoId, int playlistId)
+        public async Task<HttpStatusCode> RemoveVideoFromPlaylist(int videoId, int playlistId)
         {
-            return _playlistService.RemoveVideoFromPlaylist(videoId, playlistId);
+            return await _playlistService.RemoveVideoFromPlaylistAsync(videoId, playlistId);
         }
     }
 }

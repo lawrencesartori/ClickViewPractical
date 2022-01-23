@@ -12,7 +12,7 @@ namespace ClickViewPracticalLibrary.Model
         {
             public const string PlaylistsPath = "PlaylistPath";
             public const string VideosPath = "VideosPath";
-            public const string SavedJsonPath = "SavedJsonPath";
+            public const string DBJsonPath = "DBJsonPath";
         }
     }
 }

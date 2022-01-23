@@ -23,7 +23,7 @@ namespace ClickViewPracticalLibrary.Service
 
         private IQueryable<Video> GetVideosAsQueryable(VideoPlaylistFilter filter)
         {
-            var vids = _loader.Videos.AsQueryable();
+            var vids = _loader.PlaylistVideoDB.Videos.AsQueryable();
             if (filter.Id > 0)
             {
                 vids = vids.Where(o => o.Id == filter.Id);
@@ -37,7 +37,7 @@ namespace ClickViewPracticalLibrary.Service
 
         private IQueryable<Playlist> GetPlaylistsAsQueryable(VideoPlaylistFilter filter)
         {
-            var playLists = _loader.Playlists.AsQueryable();
+            var playLists = _loader.PlaylistVideoDB.Playlists.AsQueryable();
             if (filter.Id > 0)
             {
                 playLists = playLists.Where(o => o.ID == filter.Id);
@@ -59,14 +59,21 @@ namespace ClickViewPracticalLibrary.Service
             return GetVideosAsQueryable(new VideoPlaylistFilter { Id = id }).FirstOrDefault();
         }
 
-        public void AddPlaylist(Playlist playlist)
+        public async Task AddPlaylist(Playlist playlist)
         {
-            _loader.Playlists.Add(playlist);
+            _loader.PlaylistVideoDB.Playlists.Add(playlist);
+            await SaveChangesAsync();
         }
 
-        public void RemovePlaylist(Playlist playlist)
+        public async Task RemovePlaylist(Playlist playlist)
         {
-            _loader.Playlists.Remove(playlist);
+            _loader.PlaylistVideoDB.Playlists.Remove(playlist);
+            await SaveChangesAsync();
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _loader.SaveChangesAsync();
         }
     }
 }

@@ -13,5 +13,7 @@ namespace ClickViewPracticalLibrary.Service
 
         public string PlaylistPath => _configuration[Constants.AppSettingKeys.PlaylistsPath];
         public string VideoPath => _configuration[Constants.AppSettingKeys.VideosPath];
+
+        public string DBJsonPath => _configuration[Constants.AppSettingKeys.DBJsonPath];
     }
 }

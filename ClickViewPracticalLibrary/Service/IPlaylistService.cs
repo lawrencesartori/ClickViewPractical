@@ -5,17 +5,17 @@ namespace ClickViewPracticalLibrary.Service
 {
     public interface IPlaylistService
     {
-        public HttpStatusCode AddPlaylist(Playlist playlist);
+        public Task<HttpStatusCode> AddPlaylistAsync(Playlist playlist);
 
         public List<Playlist> GetAllPlaylists();
 
-        public HttpStatusCode UpdatePlaylist(Playlist playlist);
+        public Task<HttpStatusCode> UpdatePlaylistAsync(Playlist playlist);
 
-        public HttpStatusCode DeletePlaylist(int playlistId);
+        public Task<HttpStatusCode> DeletePlaylistAsync(int playlistId);
 
-        public HttpStatusCode AddVideoToPlaylist(int playlistId, int videoId);
+        public Task<HttpStatusCode> AddVideoToPlaylistAsync(int playlistId, int videoId);
 
-        public HttpStatusCode RemoveVideoFromPlaylist(int playlistId, int videoId);
+        public Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(int playlistId, int videoId);
 
         public List<Video> GetAllVideosInPlaylist(int playlistId);
     }

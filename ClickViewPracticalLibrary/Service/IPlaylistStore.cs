@@ -14,8 +14,10 @@ namespace ClickViewPracticalLibrary.Service
 
         public Video? GetVideoIfExists(int videoId);
 
-        public void AddPlaylist(Playlist playlist);
+        public Task AddPlaylist(Playlist playlist);
 
-        public void RemovePlaylist(Playlist playlist);
+        public Task RemovePlaylist(Playlist playlist);
+
+        public Task SaveChangesAsync();
     }
 }
