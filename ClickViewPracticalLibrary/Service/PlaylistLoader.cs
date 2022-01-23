@@ -31,10 +31,12 @@ namespace ClickViewPracticalLibrary.Service
             }
 
             var jsonString = await File.ReadAllTextAsync(_config.PlaylistPath);
-            Playlists = JsonSerializer.Deserialize<List<Playlist>>(jsonString);
+            
+            Playlists = JsonSerializer.Deserialize<List<Playlist>>(jsonString) ?? throw new Exception($"Playlists failed to deserialise. Please investigate json file at {_config.PlaylistPath}");
+            
 
             jsonString = await File.ReadAllTextAsync(_config.VideoPath);
-            Videos = JsonSerializer.Deserialize<List<Video>>(jsonString);
+            Videos = JsonSerializer.Deserialize<List<Video>>(jsonString) ?? throw new Exception($"Videos failed to deserialise. Please investigate json file at {_config.VideoPath}");
         }
     }
 }

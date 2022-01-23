@@ -86,6 +86,7 @@ namespace ClickViewPracticalLibrary.Service
             return HttpStatusCode.OK;
         }
 
+        //Will Delete a Playlist if id > 0 & Playlist exists
         public HttpStatusCode DeletePlaylist(int playlistId)
         {
             if (playlistId <= 0)
@@ -105,6 +106,8 @@ namespace ClickViewPracticalLibrary.Service
             return HttpStatusCode.OK;
         }
 
+
+        //Will add video to playlist if both ids > 0, both exist & playlist doesn't already contain video.
         public HttpStatusCode AddVideoToPlaylist(int videoId, int playlistId)
         {
             if(videoId <= 0 || playlistId <= 0)
@@ -134,6 +137,32 @@ namespace ClickViewPracticalLibrary.Service
             }
 
             existingPlayList.VideoIds.Add(videoId);
+            return HttpStatusCode.OK;
+        }
+
+        //Remove a video from a playlist if both ids > 0, playlist exists and playlist contains video
+        public HttpStatusCode RemoveVideoFromPlaylist(int videoId, int playlistId)
+        {
+            if (videoId <= 0 || playlistId <= 0)
+            {
+                _log.LogError("Playlist - {playlistId} or Video ID - {videoId} less than 0 for removal from playlist", playlistId, videoId);
+                return HttpStatusCode.BadRequest;
+            }
+
+            var existingPlayList = GetPlaylistIfExists(playlistId);
+            if (existingPlayList == null)
+            {
+                _log.LogError("Playlist not found for {playlistId}", playlistId);
+                return HttpStatusCode.NotFound;
+            }
+
+            if (!existingPlayList.VideoIds.Contains(videoId))
+            {
+                _log.LogError("Playlist {playlistId} does not contain video ID {videoId}", playlistId, videoId);
+                return HttpStatusCode.BadRequest;
+            }
+
+            existingPlayList.VideoIds.Remove(videoId);
             return HttpStatusCode.OK;
         }
 
