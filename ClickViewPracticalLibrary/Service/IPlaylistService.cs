@@ -7,5 +7,7 @@ namespace ClickViewPracticalLibrary.Service
         public bool AddPlaylist(Playlist playlist);
 
         public List<Playlist> GetAllPlaylists();
+
+        public bool UpdatePlaylist(Playlist playlist);
     }
 }
