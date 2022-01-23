@@ -17,6 +17,13 @@ namespace ClickViewPractical.Controllers
             _playlistService = playlistService;
         }
 
+        [HttpGet]
+        [Route("GetAllPlaylists")]
+        public List<Playlist> GetAllPlaylists()
+        {
+            return _playlistService.GetAllPlaylists();
+        }
+
 
         [HttpPost]
         [Route("CreatePlaylist")]

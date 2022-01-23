@@ -46,7 +46,6 @@ namespace ClickViewPracticalLibrary.Service
             return true;
         }
 
-
         public List<Playlist> GetAllPlaylists()
         {
             return _loader.Playlists;
