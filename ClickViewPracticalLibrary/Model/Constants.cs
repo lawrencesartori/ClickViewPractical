@@ -14,5 +14,10 @@ namespace ClickViewPracticalLibrary.Model
             public const string VideosPath = "VideosPath";
             public const string DBJsonPath = "DBJsonPath";
         }
+
+        public class DefaultValues
+        {
+            public const int MaxFileTries = 10;
+        }
     }
 }

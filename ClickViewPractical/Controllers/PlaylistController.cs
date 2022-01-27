@@ -55,24 +55,24 @@ namespace ClickViewPractical.Controllers
         }
 
         [HttpPost]
-        [Route("DeletePlaylist/{playlistId}")]
-        public async Task<HttpStatusCode> RemovePlaylist(int playlistId)
+        [Route("DeletePlaylist")]
+        public async Task<HttpStatusCode> RemovePlaylist(VideoPlaylistApiModel model)
         {
-            return await _playlistService.DeletePlaylistAsync(playlistId);
+            return await _playlistService.DeletePlaylistAsync(model);
         }
 
         [HttpPost]
-        [Route("AddVideoToPlaylist/{videoId}/{playlistId}")]
-        public async Task<HttpStatusCode> AddVideoToPlaylist(int videoId, int playlistId)
+        [Route("AddVideoToPlaylist")]
+        public async Task<HttpStatusCode> AddVideoToPlaylist(VideoPlaylistApiModel model)
         {
-            return await _playlistService.AddVideoToPlaylistAsync(videoId, playlistId);
+            return await _playlistService.AddVideoToPlaylistAsync(model);
         }
 
         [HttpPost]
-        [Route("RemoveVideoFromPlaylist/{videoId}/{playlistId}")]
-        public async Task<HttpStatusCode> RemoveVideoFromPlaylist(int videoId, int playlistId)
+        [Route("RemoveVideoFromPlaylist")]
+        public async Task<HttpStatusCode> RemoveVideoFromPlaylist(VideoPlaylistApiModel model)
         {
-            return await _playlistService.RemoveVideoFromPlaylistAsync(videoId, playlistId);
+            return await _playlistService.RemoveVideoFromPlaylistAsync(model);
         }
     }
 }

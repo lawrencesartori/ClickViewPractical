@@ -21,13 +21,13 @@ namespace ClickViewPracticalLibrary.Service
         {
             if (playlist.ID > 0)
             {
-                LogError("Playlist ID greater than 0", nameof(AddPlaylistAsync));
+                _log.LogError("Playlist ID greater than 0", nameof(AddPlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
             if (string.IsNullOrEmpty(playlist.Name))
             {
-                LogError("Playlist name is empty", nameof(AddPlaylistAsync));
+                _log.LogError("Playlist name is empty", nameof(AddPlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
@@ -37,14 +37,12 @@ namespace ClickViewPracticalLibrary.Service
                 if (videos.Count != playlist.VideoIds.Count)
                 {
                     var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
-                    LogError($"One of more invalid Video Ids were provided ({string.Join(',', invalidIds)})", nameof(AddPlaylistAsync));
+                    _log.LogError($"One of more invalid Video Ids were provided ({string.Join(',', invalidIds)})", nameof(AddPlaylistAsync));
                     return HttpStatusCode.BadRequest;
                 }
             }
 
-            playlist.ID = GetAllPlaylists().Max(o => o.ID) + 1;
-            await _store.AddPlaylist(playlist);
-            return HttpStatusCode.OK;
+            return await _store.AddPlaylistAsync(playlist);
         }
 
         //Update an existing playlist. Must have an id greater than 0, a name and all valid video ids
@@ -52,20 +50,20 @@ namespace ClickViewPracticalLibrary.Service
         {
             if (playlist.ID <= 0)
             {
-                LogError("Playlist ID less than 0", nameof(UpdatePlaylistAsync));
+                _log.LogError("Playlist ID less than 0", nameof(UpdatePlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
             if (string.IsNullOrEmpty(playlist.Name))
             {
-                LogError("Playlist name is empty", nameof(UpdatePlaylistAsync));
+                _log.LogError("Playlist name is empty", nameof(UpdatePlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
             var existingPlayList = _store.GetPlaylistIfExists(playlist.ID);
             if (existingPlayList == null)
             {
-                LogError($"Playlist not found for {playlist.ID}", nameof(UpdatePlaylistAsync));
+                _log.LogError($"Playlist not found for {playlist.ID}", nameof(UpdatePlaylistAsync));
                 return HttpStatusCode.NotFound;
             }
 
@@ -75,98 +73,90 @@ namespace ClickViewPracticalLibrary.Service
                 if (videos.Count != playlist.VideoIds.Count)
                 {
                     var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
-                    LogError($"One of more invalid Video Ids were provided ({string.Join(',', invalidIds)})", nameof(UpdatePlaylistAsync));
+                    _log.LogError($"One of more invalid Video Ids were provided ({string.Join(',', invalidIds)})", nameof(UpdatePlaylistAsync));
                     return HttpStatusCode.BadRequest;
                 }
             }
 
-            existingPlayList.Name = playlist.Name;
-            existingPlayList.Description = playlist.Description;
-            existingPlayList.VideoIds = playlist.VideoIds;
-            await _store.SaveChangesAsync();
-            return HttpStatusCode.OK;
+            return await _store.UpdatePlaylistAsync(playlist);
         }
 
         //Will Delete a Playlist if id > 0 & Playlist exists
-        public async Task<HttpStatusCode> DeletePlaylistAsync(int playlistId)
+        public async Task<HttpStatusCode> DeletePlaylistAsync(VideoPlaylistApiModel model)
         {
-            if (playlistId <= 0)
+            if (model == null || model.playlistId <= 0)
             {
-                LogError("Playlist ID less than 0", nameof(DeletePlaylistAsync));
+                _log.LogError("Playlist ID less than 0", nameof(DeletePlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
-            var existingPlaylist = _store.GetPlaylistIfExists(playlistId);
+            var existingPlaylist = _store.GetPlaylistIfExists(model.playlistId);
             if(existingPlaylist == null)
             {
-                LogError($"Playlist not found for id {playlistId}", nameof(DeletePlaylistAsync));
+                _log.LogError($"Playlist not found for id {model.playlistId}", nameof(DeletePlaylistAsync));
                 return HttpStatusCode.NotFound;
             }
 
-            await _store.RemovePlaylist(existingPlaylist);
-            return HttpStatusCode.OK;
+            return await _store.RemovePlaylistAsync(model.playlistId);
         }
 
 
         //Will add video to playlist if both ids > 0, both exist & playlist doesn't already contain video.
-        public async Task<HttpStatusCode> AddVideoToPlaylistAsync(int videoId, int playlistId)
+        public async Task<HttpStatusCode> AddVideoToPlaylistAsync(VideoPlaylistApiModel model)
         {
-            if(videoId <= 0 || playlistId <= 0)
+            if(model == null || model.videoId.IsNullOrZero() || model.playlistId <= 0)
             {
-                LogError($"Playlist - {playlistId} or Video ID - {videoId} less than 0", nameof(AddVideoToPlaylistAsync));
+                _log.LogError($"Playlist - {model.playlistId} or Video ID - {model.videoId} less than 0", nameof(AddVideoToPlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
-            var videoToAdd = _store.GetVideoIfExists(videoId);
+            var videoToAdd = _store.GetVideoIfExists(model.videoId.Value);
             if (videoToAdd == null)
             {
-                LogError($"Video not found for {videoId}", nameof(AddVideoToPlaylistAsync));
+                _log.LogError($"Video not found for {model.videoId}", nameof(AddVideoToPlaylistAsync));
                 return HttpStatusCode.NotFound;
             }
 
-            var existingPlayList = _store.GetPlaylistIfExists(playlistId);
+            var existingPlayList = _store.GetPlaylistIfExists(model.playlistId);
             if (existingPlayList == null)
             {
-                LogError($"Playlist not found for {playlistId}", nameof(AddVideoToPlaylistAsync));
+                _log.LogError($"Playlist not found for {model.playlistId}", nameof(AddVideoToPlaylistAsync));
                 return HttpStatusCode.NotFound;
             }
 
-            if (existingPlayList.VideoIds.Contains(videoId))
+            if (existingPlayList.VideoIds.Contains(model.videoId.Value))
             {
-                LogError($"Playlist {playlistId} already contains video ID {videoId}", nameof(AddVideoToPlaylistAsync));
+                _log.LogError($"Playlist {model.playlistId} already contains video ID {model.videoId}", nameof(AddVideoToPlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
-            existingPlayList.VideoIds.Add(videoId);
-            await _store.SaveChangesAsync();
+            await _store.AddVideoToPlaylistAsync(model.videoId.Value, model.playlistId);
             return HttpStatusCode.OK;
         }
 
         //Remove a video from a playlist if both ids > 0, playlist exists and playlist contains video
-        public async Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(int videoId, int playlistId)
+        public async Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(VideoPlaylistApiModel model)
         {
-            if (videoId <= 0 || playlistId <= 0)
+            if (model == null || model.videoId.IsNullOrZero() || model.playlistId <= 0)
             {
-                LogError($"Playlist - {playlistId} or Video ID - {videoId} less than 0", nameof(RemoveVideoFromPlaylistAsync));
+                _log.LogError($"Playlist - {model?.playlistId} or Video ID - {model?.videoId} less than 0", nameof(RemoveVideoFromPlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
-            var existingPlayList = _store.GetPlaylistIfExists(playlistId);
+            var existingPlayList = _store.GetPlaylistIfExists(model.playlistId);
             if (existingPlayList == null)
             {
-                LogError($"Playlist not found for {playlistId}", nameof(RemoveVideoFromPlaylistAsync));
+                _log.LogError($"Playlist not found for {model.playlistId}", nameof(RemoveVideoFromPlaylistAsync));
                 return HttpStatusCode.NotFound;
             }
 
-            if (!existingPlayList.VideoIds.Contains(videoId))
+            if (!existingPlayList.VideoIds.Contains(model.videoId.Value))
             {
-                LogError($"Playlist {playlistId} does not contain video ID {videoId}", nameof(RemoveVideoFromPlaylistAsync));
+                _log.LogError($"Playlist {model.playlistId} does not contain video ID {model.videoId}", nameof(RemoveVideoFromPlaylistAsync));
                 return HttpStatusCode.BadRequest;
             }
 
-            existingPlayList.VideoIds.Remove(videoId);
-            await _store.SaveChangesAsync();
-            return HttpStatusCode.OK;
+           return await _store.RemoveVideoFromPlaylistAsync(model.videoId.Value, model.playlistId);
         }
 
         //Get all related videos from a playlist id
@@ -174,14 +164,14 @@ namespace ClickViewPracticalLibrary.Service
         {
             if (playlistId <= 0)
             {
-                LogError("Playlist ID less than 0", nameof(RemoveVideoFromPlaylistAsync));
+                _log.LogError("Playlist ID less than 0", nameof(RemoveVideoFromPlaylistAsync));
                 return new List<Video>();
             }
 
             var existingPlayList = _store.GetPlaylistIfExists(playlistId);
             if (existingPlayList == null)
             {
-                LogError($"Playlist not found for {playlistId}", nameof(GetAllVideosInPlaylist));
+                _log.LogError($"Playlist not found for {playlistId}", nameof(GetAllVideosInPlaylist));
                 return new List<Video>();
             }
 
@@ -192,7 +182,7 @@ namespace ClickViewPracticalLibrary.Service
         {
             if(videoId <= 0)
             {
-                LogError("Video ID less than 0", nameof(GetAllPlaylistsForVideo));
+                _log.LogError("Video ID less than 0", nameof(GetAllPlaylistsForVideo));
                 return new List<Playlist>();
             }
 
@@ -207,11 +197,6 @@ namespace ClickViewPracticalLibrary.Service
         public List<Video> GetAllVideos()
         {
             return _store.GetVideos(new VideoPlaylistFilter()).ToList();
-        }
-
-        private void LogError(string message, string method)
-        {
-            _log.LogError("{message} - within method {method}", message, method);
         }
     }
 }

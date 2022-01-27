@@ -16,7 +16,7 @@ namespace ClickViewPracticalLibrary.Service
             PlaylistVideoDB = new PlaylistVideoDB();
         }
 
-        public async Task LoadData()
+        public async Task LoadDataIfNeedToDbJsonFile()
         {
             if (!File.Exists(_config.DBJsonPath))
             {
@@ -37,16 +37,6 @@ namespace ClickViewPracticalLibrary.Service
 
                 await File.WriteAllTextAsync(_config.DBJsonPath, JsonSerializer.Serialize(PlaylistVideoDB));
             }
-            else
-            {
-                var jsonString = await File.ReadAllTextAsync(_config.DBJsonPath);
-                PlaylistVideoDB = JsonSerializer.Deserialize<PlaylistVideoDB>(jsonString) ?? throw new Exception($"DB failed to deserialise. Please investigate json file at {_config.DBJsonPath}");
-            }
-        }
-
-        public async Task SaveChangesAsync()
-        {
-            await File.WriteAllTextAsync(_config.DBJsonPath, JsonSerializer.Serialize(PlaylistVideoDB));
         }
     }
 }

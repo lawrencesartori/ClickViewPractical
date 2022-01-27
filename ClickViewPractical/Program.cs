@@ -7,15 +7,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddSingleton<ILoaderConfigManager, LoaderConfigManager>();
 builder.Services.AddSingleton<PlaylistLoader>();
-builder.Services.AddTransient<IPlaylistStore, PlaylistStore>();
-builder.Services.AddTransient<IPlaylistService, PlaylistService>();
+builder.Services.AddScoped<IPlaylistStore, PlaylistStore>();
+builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 
 var app = builder.Build();
 
 var playlistLoader = app.Services.GetService<PlaylistLoader>();
 if (playlistLoader != null)
 {
-    await playlistLoader.LoadData();
+    await playlistLoader.LoadDataIfNeedToDbJsonFile();
 }
 
 // Configure the HTTP request pipeline.

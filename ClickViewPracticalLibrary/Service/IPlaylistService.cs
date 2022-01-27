@@ -11,11 +11,11 @@ namespace ClickViewPracticalLibrary.Service
 
         public Task<HttpStatusCode> UpdatePlaylistAsync(Playlist playlist);
 
-        public Task<HttpStatusCode> DeletePlaylistAsync(int playlistId);
+        public Task<HttpStatusCode> DeletePlaylistAsync(VideoPlaylistApiModel model);
 
-        public Task<HttpStatusCode> AddVideoToPlaylistAsync(int playlistId, int videoId);
+        public Task<HttpStatusCode> AddVideoToPlaylistAsync(VideoPlaylistApiModel model);
 
-        public Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(int playlistId, int videoId);
+        public Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(VideoPlaylistApiModel model);
 
         public List<Video> GetAllVideosInPlaylist(int playlistId);
 

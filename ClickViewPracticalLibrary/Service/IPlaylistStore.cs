@@ -1,5 +1,6 @@
 ﻿
 using ClickViewPracticalLibrary.Model;
+using System.Net;
 
 namespace ClickViewPracticalLibrary.Service
 {
@@ -14,10 +15,14 @@ namespace ClickViewPracticalLibrary.Service
 
         public Video? GetVideoIfExists(int videoId);
 
-        public Task AddPlaylist(Playlist playlist);
+        public Task<HttpStatusCode> AddPlaylistAsync(Playlist playlist);
 
-        public Task RemovePlaylist(Playlist playlist);
+        public Task<HttpStatusCode> UpdatePlaylistAsync(Playlist playlist);
 
-        public Task SaveChangesAsync();
+        public Task<HttpStatusCode> RemovePlaylistAsync(int playlistId);
+
+        public Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(int videoId, int playlistId);
+
+        public Task<HttpStatusCode> AddVideoToPlaylistAsync(int videoId, int playlistId);
     }
 }
