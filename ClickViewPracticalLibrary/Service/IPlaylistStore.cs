@@ -1,28 +1,30 @@
 ﻿
 using ClickViewPracticalLibrary.Model;
 using System.Net;
+using ClickViewPracticalLibrary.Model.Filters;
 
 namespace ClickViewPracticalLibrary.Service
 {
-    public interface IPlaylistStore
+	public interface IPlaylistStore
     {
+	    Task<List<SimplePlaylist>> GetSimplePlaylists(PlaylistFilter filter);
 
-        public List<Playlist> GetPlaylists(PlaylistFilter filter);
+        Task<List<Video>> GetVideos(VideoPlaylistFilter filter);
 
-        public List<Video> GetVideos(VideoPlaylistFilter filter);
+        Task<Playlist?> GetPlaylistIfExists(int playlistId);
 
-        public Playlist? GetPlaylistIfExists(int playlistId);
+        Task<SimplePlaylist?> GetSimplePlaylistIfExists(int playlistId);
 
-        public Video? GetVideoIfExists(int videoId);
+        Task<Video?> GetVideoIfExists(int videoId);
 
-        public Task<HttpStatusCode> AddPlaylistAsync(Playlist playlist);
+        Task<SimplePlaylist?> AddPlaylistAsync(Playlist playlist);
 
-        public Task<HttpStatusCode> UpdatePlaylistAsync(Playlist playlist);
+        Task<SimplePlaylist?> UpdatePlaylistAsync(SimplePlaylist playlist);
 
-        public Task<HttpStatusCode> RemovePlaylistAsync(int playlistId);
+        Task<bool> RemovePlaylistAsync(int playlistId);
 
-        public Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(int videoId, int playlistId);
+        Task<List<int>?> RemoveVideoFromPlaylistAsync(int videoId, int playlistId);
 
-        public Task<HttpStatusCode> AddVideoToPlaylistAsync(int videoId, int playlistId);
+        Task<List<int>?> AddVideoToPlaylistAsync(int videoId, int playlistId);
     }
 }

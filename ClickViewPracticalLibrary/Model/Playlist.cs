@@ -7,18 +7,9 @@ using System.Text.Json.Serialization;
 
 namespace ClickViewPracticalLibrary.Model
 {
-    public class Playlist
+    public class Playlist : SimplePlaylist
     {
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("description")]
-        public string Description { get; set; }
-
-        [JsonPropertyName("id")]
-        public int ID { get; set; }
-
-        [JsonPropertyName("videoIds")]
-        public List<int> VideoIds { get; set; }
+	    [JsonPropertyName("videoIds")]
+        public List<int> VideoIds { get; set; } = new List<int>();  
     }
 }

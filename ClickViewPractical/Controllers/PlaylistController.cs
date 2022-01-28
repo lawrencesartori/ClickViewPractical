@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using ClickViewPracticalLibrary.Service;
 using ClickViewPracticalLibrary.Model;
 using System.Net;
+using ClickViewPracticalLibrary;
 
 namespace ClickViewPractical.Controllers
 {
@@ -18,61 +19,99 @@ namespace ClickViewPractical.Controllers
             _playlistService = playlistService;
         }
 
-        [HttpGet]
-        [Route("GetAllPlaylists")]
-        public List<Playlist> GetAllPlaylists()
+        [HttpGet,Route("GetAllPlaylists")]
+        public async Task<IActionResult> GetAllPlaylists()
         {
-            return _playlistService.GetAllPlaylists();
+            return Ok(await _playlistService.GetAllSimplePlaylists());
         }
 
-        [HttpGet]
-        [Route("GetAllVideosInPlaylist/{playlistId}")]
-        public List<Video> GetAllVideosInPlaylist(int playlistId)
+        
+        [HttpGet, Route("GetAllVideosInPlaylist/{playlistId}")]
+        public async Task<IActionResult> GetAllVideosInPlaylist(int playlistId)
         {
-            return _playlistService.GetAllVideosInPlaylist(playlistId);
-        }
-
-        [HttpGet]
-        [Route("GetAllPlaylistsForVideo/{videoId}")]
-        public List<Playlist> GetAllPlaylistsForVideo(int videoId)
-        {
-            return _playlistService.GetAllPlaylistsForVideo(videoId);
+            var playlists = await _playlistService.GetAllVideosInPlaylist(playlistId);
+            if(playlists == null)
+            {
+                return NotFound($"Playlist not found");
+            }
+            return Ok(playlists);
         }
 
 
-        [HttpPost]
-        [Route("CreatePlaylist")]
-        public async Task<HttpStatusCode> GetPlaylists(Playlist playlist)
+        [HttpGet,Route("GetAllPlaylistsForVideo/{videoId}")]
+        public async Task<IActionResult> GetAllPlaylistsForVideo(int videoId)
         {
-            return await _playlistService.AddPlaylistAsync(playlist);
+            var results = await _playlistService.GetAllPlaylistsForVideo(videoId);
+            if(results == null)
+            {
+                return NotFound("Video not found");
+            }
+            return Ok(results);
         }
 
-        [HttpPost]
-        [Route("UpdatePlaylist")]
-        public async Task<HttpStatusCode> UpdatePlaylists(Playlist playlist)
+
+        
+        [HttpPost,Route("CreatePlaylist")]
+        public async Task<IActionResult> CreatePlaylist(SimplePlaylist playlist)
         {
-            return await _playlistService.UpdatePlaylistAsync(playlist);
+            var result = await _playlistService.AddPlaylistAsync(playlist);
+            return ReturnResult(result);
         }
 
-        [HttpPost]
-        [Route("DeletePlaylist")]
-        public async Task<HttpStatusCode> RemovePlaylist(VideoPlaylistApiModel model)
+        
+        [HttpPut,Route("UpdatePlaylist")]
+        public async Task<IActionResult> UpdatePlaylists(SimplePlaylist playlist)
         {
-            return await _playlistService.DeletePlaylistAsync(model);
+            var result = await _playlistService.UpdatePlaylistAsync(playlist);
+            return ReturnResult(result);
         }
 
-        [HttpPost]
-        [Route("AddVideoToPlaylist")]
-        public async Task<HttpStatusCode> AddVideoToPlaylist(VideoPlaylistApiModel model)
+
+        [HttpDelete,Route("DeletePlaylist/{playlistId}")]
+        public async Task<IActionResult> RemovePlaylist(int playlistId)
         {
-            return await _playlistService.AddVideoToPlaylistAsync(model);
+            var result = await _playlistService.DeletePlaylistAsync(playlistId);
+            return ReturnResult(result);
         }
 
-        [HttpPost]
-        [Route("RemoveVideoFromPlaylist")]
-        public async Task<HttpStatusCode> RemoveVideoFromPlaylist(VideoPlaylistApiModel model)
+        [HttpPut,Route("AddVideoToPlaylist/{playlistId}/{videoId}")]
+        public async Task<IActionResult> AddVideoToPlaylist(int playlistId, int videoId)
         {
-            return await _playlistService.RemoveVideoFromPlaylistAsync(model);
+            var result = await _playlistService.AddVideoToPlaylistAsync(playlistId,videoId);
+            return ReturnResult(result);
+        }
+
+        [HttpDelete,Route("RemoveVideoFromPlaylist/{playlistId}/{videoId}")]
+        public async Task<IActionResult> RemoveVideoFromPlaylist(int playlistId, int videoId)
+        {
+	        var result = await _playlistService.RemoveVideoFromPlaylistAsync(playlistId, videoId);
+	        return ReturnResult(result);
+        }
+
+        private IActionResult ReturnResult(MethodResult result)
+        {
+	        if (result.IsSuccess)
+	        {
+                if(result.Playlist != null)
+                {
+                    return Ok(result.Playlist);
+                }
+                if (result.VideoIds != null)
+                {
+                    return Ok(result.VideoIds);
+                }
+                return result.Message.IsNullOrEmpty() ? NoContent() : Ok(result.Message);
+	        }
+
+            if (result.StatusCode == HttpStatusCode.NotFound)
+            {
+                return NotFound(result.Message);
+            }
+            else
+            {
+                return BadRequest(result.Message);
+
+            }
         }
     }
 }

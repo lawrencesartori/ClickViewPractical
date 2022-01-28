@@ -14,6 +14,21 @@ namespace ClickViewPracticalLibrary
             return val == null || val <= 0;
         }
 
+        public static bool IsNullOrEmpty(this string val)
+        {
+            return string.IsNullOrEmpty(val);
+        }
+
+        public static bool IsNullOrEmpty<T>(this List<T>? val)
+        {
+	        return val == null || !val.Any();
+        }
+
+        public static bool IsNotNullOrEmpty<T>(this List<T>? val)
+        {
+	        return !val.IsNullOrEmpty();
+        }
+
         public static void LogError(this ILogger log, string message, string method)
         {
             log.LogError("{message} - within method {method}", message, method);

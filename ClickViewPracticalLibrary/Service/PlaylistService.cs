@@ -1,6 +1,6 @@
 ﻿using ClickViewPracticalLibrary.Model;
 using Microsoft.Extensions.Logging;
-using System.Net;
+using ClickViewPracticalLibrary.Model.Filters;
 
 namespace ClickViewPracticalLibrary.Service
 {
@@ -8,195 +8,181 @@ namespace ClickViewPracticalLibrary.Service
     {
         private readonly IPlaylistStore _store;
         private readonly ILogger<PlaylistService> _log;
+        private readonly MethodResultHelper _resultHelper;
 
         public PlaylistService(IPlaylistStore store, ILogger<PlaylistService> logger)
         {
             _store = store;
             _log = logger;
+            _resultHelper = new MethodResultHelper(_log);
         }
 
 
         //Adds a playlist if it has all valid video ids, id <=0 and a name
-        public async Task<HttpStatusCode> AddPlaylistAsync(Playlist playlist)
+        public async Task<MethodResult> AddPlaylistAsync(SimplePlaylist playlist)
         {
-            if (playlist.ID > 0)
-            {
-                _log.LogError("Playlist ID greater than 0", nameof(AddPlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	        if (playlist.Id > 0)
+	        {
+		        return _resultHelper.GetBadRequestFailedResult("Playlist ID cannot be greater than 0", nameof(AddPlaylistAsync));
             }
 
             if (string.IsNullOrEmpty(playlist.Name))
             {
-                _log.LogError("Playlist name is empty", nameof(AddPlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	            return _resultHelper.GetBadRequestFailedResult("Playlist name is empty", nameof(AddPlaylistAsync));
             }
 
-            if (playlist.VideoIds.Any())
-            {
-                var videos = _store.GetVideos(new VideoPlaylistFilter { Ids = playlist.VideoIds }).Select(o => o.Id).ToList();
-                if (videos.Count != playlist.VideoIds.Count)
-                {
-                    var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
-                    _log.LogError($"One of more invalid Video Ids were provided ({string.Join(',', invalidIds)})", nameof(AddPlaylistAsync));
-                    return HttpStatusCode.BadRequest;
-                }
-            }
-
-            return await _store.AddPlaylistAsync(playlist);
+            var newPlaylist = await _store.AddPlaylistAsync(new Playlist { VideoIds = new List<int>(), Description = playlist.Description, Name = playlist.Name});
+            return newPlaylist != null ? _resultHelper.GetPlaylistSuccessResult(newPlaylist) : _resultHelper.GetNotFoundFailedResult("There was an issue creating your playlist", nameof(AddPlaylistAsync));
         }
 
         //Update an existing playlist. Must have an id greater than 0, a name and all valid video ids
-        public async Task<HttpStatusCode> UpdatePlaylistAsync(Playlist playlist)
+        public async Task<MethodResult> UpdatePlaylistAsync(SimplePlaylist playlist)
         {
-            if (playlist.ID <= 0)
+            if (playlist.Id <= 0)
             {
-                _log.LogError("Playlist ID less than 0", nameof(UpdatePlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	            return _resultHelper.GetBadRequestFailedResult("Playlist ID cannot be greater than 0", nameof(UpdatePlaylistAsync));
             }
 
             if (string.IsNullOrEmpty(playlist.Name))
             {
-                _log.LogError("Playlist name is empty", nameof(UpdatePlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	            return _resultHelper.GetBadRequestFailedResult("Playlist name is empty", nameof(UpdatePlaylistAsync));
             }
 
-            var existingPlayList = _store.GetPlaylistIfExists(playlist.ID);
+            var existingPlayList = await _store.GetPlaylistIfExists(playlist.Id);
             if (existingPlayList == null)
             {
-                _log.LogError($"Playlist not found for {playlist.ID}", nameof(UpdatePlaylistAsync));
-                return HttpStatusCode.NotFound;
+	            return _resultHelper.GetNotFoundFailedResult($"Playlist not found for {playlist.Id}", nameof(UpdatePlaylistAsync));
             }
+          
 
-            if (playlist.VideoIds.Any())
-            {
-                var videos = _store.GetVideos(new VideoPlaylistFilter { Ids = playlist.VideoIds }).Select(o => o.Id).ToList();
-                if (videos.Count != playlist.VideoIds.Count)
-                {
-                    var invalidIds = playlist.VideoIds.Where(o => !videos.Contains(o));
-                    _log.LogError($"One of more invalid Video Ids were provided ({string.Join(',', invalidIds)})", nameof(UpdatePlaylistAsync));
-                    return HttpStatusCode.BadRequest;
-                }
-            }
-
-            return await _store.UpdatePlaylistAsync(playlist);
+            var playlistResult = await _store.UpdatePlaylistAsync(playlist);
+            return playlistResult != null
+	            ? _resultHelper.GetPlaylistSuccessResult(playlistResult)
+	            : _resultHelper.GetNotFoundFailedResult("Failed to update Playlist", nameof(UpdatePlaylistAsync));
         }
 
         //Will Delete a Playlist if id > 0 & Playlist exists
-        public async Task<HttpStatusCode> DeletePlaylistAsync(VideoPlaylistApiModel model)
+        public async Task<MethodResult> DeletePlaylistAsync(int playlistId)
         {
-            if (model == null || model.playlistId <= 0)
+            if (playlistId <= 0)
             {
-                _log.LogError("Playlist ID less than 0", nameof(DeletePlaylistAsync));
-                return HttpStatusCode.BadRequest;
+                return _resultHelper.GetBadRequestFailedResult("Playlist ID less than 0", nameof(DeletePlaylistAsync));
             }
 
-            var existingPlaylist = _store.GetPlaylistIfExists(model.playlistId);
+            var existingPlaylist = await _store.GetPlaylistIfExists(playlistId);
             if(existingPlaylist == null)
             {
-                _log.LogError($"Playlist not found for id {model.playlistId}", nameof(DeletePlaylistAsync));
-                return HttpStatusCode.NotFound;
+	            return _resultHelper.GetNotFoundFailedResult($"Playlist not found for id {playlistId}", nameof(DeletePlaylistAsync));
             }
 
-            return await _store.RemovePlaylistAsync(model.playlistId);
+            var result = await _store.RemovePlaylistAsync(playlistId);
+            return result
+	            ? _resultHelper.GetEmptySuccessResult()
+	            : _resultHelper.GetNotFoundFailedResult("Failed to Delete Playlist", nameof(DeletePlaylistAsync));
         }
 
 
         //Will add video to playlist if both ids > 0, both exist & playlist doesn't already contain video.
-        public async Task<HttpStatusCode> AddVideoToPlaylistAsync(VideoPlaylistApiModel model)
+        public async Task<MethodResult> AddVideoToPlaylistAsync(int playlistId, int videoId)
         {
-            if(model == null || model.videoId.IsNullOrZero() || model.playlistId <= 0)
+            if(videoId <= 0 || playlistId <= 0)
             {
-                _log.LogError($"Playlist - {model.playlistId} or Video ID - {model.videoId} less than 0", nameof(AddVideoToPlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	            return _resultHelper.GetBadRequestFailedResult($"Playlist - {playlistId} or Video ID - {videoId} less than 0", nameof(AddVideoToPlaylistAsync));
             }
 
-            var videoToAdd = _store.GetVideoIfExists(model.videoId.Value);
+            var videoToAdd = await _store.GetVideoIfExists(videoId);
             if (videoToAdd == null)
             {
-                _log.LogError($"Video not found for {model.videoId}", nameof(AddVideoToPlaylistAsync));
-                return HttpStatusCode.NotFound;
+	            return _resultHelper.GetNotFoundFailedResult($"Video not found for {videoId}", nameof(AddVideoToPlaylistAsync));
             }
 
-            var existingPlayList = _store.GetPlaylistIfExists(model.playlistId);
+            var existingPlayList = await _store.GetPlaylistIfExists(playlistId);
             if (existingPlayList == null)
             {
-                _log.LogError($"Playlist not found for {model.playlistId}", nameof(AddVideoToPlaylistAsync));
-                return HttpStatusCode.NotFound;
+	            return _resultHelper.GetNotFoundFailedResult($"Playlist not found for {playlistId}", nameof(AddVideoToPlaylistAsync));
             }
 
-            if (existingPlayList.VideoIds.Contains(model.videoId.Value))
+            if (existingPlayList.VideoIds.IsNotNullOrEmpty() && existingPlayList.VideoIds.Contains(videoId))
             {
-                _log.LogError($"Playlist {model.playlistId} already contains video ID {model.videoId}", nameof(AddVideoToPlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	            return _resultHelper.GetBadRequestFailedResult($"Playlist {playlistId} already contains video ID {videoId}", nameof(AddVideoToPlaylistAsync));
             }
 
-            await _store.AddVideoToPlaylistAsync(model.videoId.Value, model.playlistId);
-            return HttpStatusCode.OK;
+			var updatedVideoIds = await _store.AddVideoToPlaylistAsync(videoId, playlistId);
+			return updatedVideoIds != null
+				? _resultHelper.GetVideoIdsSuccessResult(updatedVideoIds)
+				: _resultHelper.GetNotFoundFailedResult("Failed to Add Video to Playlist", nameof(AddVideoToPlaylistAsync));
         }
 
         //Remove a video from a playlist if both ids > 0, playlist exists and playlist contains video
-        public async Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(VideoPlaylistApiModel model)
+        public async Task<MethodResult> RemoveVideoFromPlaylistAsync(int playlistId, int videoId)
         {
-            if (model == null || model.videoId.IsNullOrZero() || model.playlistId <= 0)
+            if (videoId <= 0 || playlistId <= 0)
             {
-                _log.LogError($"Playlist - {model?.playlistId} or Video ID - {model?.videoId} less than 0", nameof(RemoveVideoFromPlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	            return _resultHelper.GetBadRequestFailedResult($"Playlist - {playlistId} or Video ID - {videoId} less than 0", nameof(RemoveVideoFromPlaylistAsync));
             }
 
-            var existingPlayList = _store.GetPlaylistIfExists(model.playlistId);
+            var existingPlayList = await _store.GetPlaylistIfExists(playlistId);
             if (existingPlayList == null)
             {
-                _log.LogError($"Playlist not found for {model.playlistId}", nameof(RemoveVideoFromPlaylistAsync));
-                return HttpStatusCode.NotFound;
+	            return _resultHelper.GetNotFoundFailedResult($"Playlist not found for {playlistId}", nameof(RemoveVideoFromPlaylistAsync));
             }
 
-            if (!existingPlayList.VideoIds.Contains(model.videoId.Value))
+            if (!existingPlayList.VideoIds.Contains(videoId))
             {
-                _log.LogError($"Playlist {model.playlistId} does not contain video ID {model.videoId}", nameof(RemoveVideoFromPlaylistAsync));
-                return HttpStatusCode.BadRequest;
+	            return _resultHelper.GetNotFoundFailedResult($"Playlist {playlistId} does not contain video ID {videoId}", nameof(RemoveVideoFromPlaylistAsync));
             }
 
-           return await _store.RemoveVideoFromPlaylistAsync(model.videoId.Value, model.playlistId);
+            var updatedVideoIds = await _store.RemoveVideoFromPlaylistAsync(videoId, playlistId);
+            return updatedVideoIds != null
+	            ? _resultHelper.GetVideoIdsSuccessResult(updatedVideoIds)
+	            : _resultHelper.GetNotFoundFailedResult("Failed to Remove Video from Playlist", nameof(AddVideoToPlaylistAsync));
         }
 
         //Get all related videos from a playlist id
-        public List<Video> GetAllVideosInPlaylist(int playlistId)
+        public async Task<List<Video>?> GetAllVideosInPlaylist(int playlistId)
         {
             if (playlistId <= 0)
             {
-                _log.LogError("Playlist ID less than 0", nameof(RemoveVideoFromPlaylistAsync));
-                return new List<Video>();
+                _log.LogError("Playlist ID less than 0", nameof(GetAllVideosInPlaylist));
+                return null;
             }
 
-            var existingPlayList = _store.GetPlaylistIfExists(playlistId);
+            var existingPlayList = await _store.GetPlaylistIfExists(playlistId);
             if (existingPlayList == null)
             {
                 _log.LogError($"Playlist not found for {playlistId}", nameof(GetAllVideosInPlaylist));
-                return new List<Video>();
+                return null;
             }
 
-            return _store.GetVideos(new VideoPlaylistFilter { Ids = existingPlayList.VideoIds});
+            return existingPlayList.VideoIds.IsNullOrEmpty() ? new List<Video>() : await _store.GetVideos(new VideoPlaylistFilter { Ids = existingPlayList.VideoIds});
         }
 
-        public List<Playlist> GetAllPlaylistsForVideo(int videoId)
+        public async Task<List<SimplePlaylist>?> GetAllPlaylistsForVideo(int videoId)
         {
             if(videoId <= 0)
             {
                 _log.LogError("Video ID less than 0", nameof(GetAllPlaylistsForVideo));
-                return new List<Playlist>();
+                return null;
             }
 
-            return _store.GetPlaylists(new PlaylistFilter { VideoId = videoId });
+            var video = await _store.GetVideoIfExists(videoId);
+            if(video == null)
+            {
+                _log.LogError($"Video not found for Id {videoId}", nameof(GetAllPlaylistsForVideo));
+                return null;
+            }
+
+            return await _store.GetSimplePlaylists(new PlaylistFilter { VideoId = videoId });
         }
 
-        public List<Playlist> GetAllPlaylists()
+        public async Task<List<SimplePlaylist>> GetAllSimplePlaylists()
         {
-            return _store.GetPlaylists(new PlaylistFilter());
+            return await _store.GetSimplePlaylists(new PlaylistFilter());
         }
 
-        public List<Video> GetAllVideos()
+        public async Task<SimplePlaylist?> GetSimplePlaylistIfExists(int playlistId)
         {
-            return _store.GetVideos(new VideoPlaylistFilter()).ToList();
+            return (await _store.GetSimplePlaylists(new PlaylistFilter { Id = playlistId})).FirstOrDefault();
         }
     }
 }

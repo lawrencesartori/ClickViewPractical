@@ -3,22 +3,22 @@ using System.Net;
 
 namespace ClickViewPracticalLibrary.Service
 {
-    public interface IPlaylistService
+	public interface IPlaylistService
     {
-        public Task<HttpStatusCode> AddPlaylistAsync(Playlist playlist);
+        Task<MethodResult> AddPlaylistAsync(SimplePlaylist playlist);
 
-        public List<Playlist> GetAllPlaylists();
+        Task<List<SimplePlaylist>> GetAllSimplePlaylists();
 
-        public Task<HttpStatusCode> UpdatePlaylistAsync(Playlist playlist);
+        Task<MethodResult> UpdatePlaylistAsync(SimplePlaylist playlist);
 
-        public Task<HttpStatusCode> DeletePlaylistAsync(VideoPlaylistApiModel model);
+        Task<MethodResult> DeletePlaylistAsync(int playlistId);
 
-        public Task<HttpStatusCode> AddVideoToPlaylistAsync(VideoPlaylistApiModel model);
+        Task<MethodResult> AddVideoToPlaylistAsync(int playlistId, int videoId);
 
-        public Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(VideoPlaylistApiModel model);
+        Task<MethodResult> RemoveVideoFromPlaylistAsync(int playlistId, int videoId);
 
-        public List<Video> GetAllVideosInPlaylist(int playlistId);
+        Task<List<Video>?> GetAllVideosInPlaylist(int playlistId);
 
-        public List<Playlist> GetAllPlaylistsForVideo(int video);
+        Task<List<SimplePlaylist>?> GetAllPlaylistsForVideo(int video);
     }
 }

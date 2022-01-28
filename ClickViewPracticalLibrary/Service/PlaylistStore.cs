@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using ClickViewPracticalLibrary.Model.Filters;
 
 namespace ClickViewPracticalLibrary.Service
 {
@@ -11,160 +12,161 @@ namespace ClickViewPracticalLibrary.Service
     {
         private readonly string _dbJsonConnectionString;
         private readonly ILogger<PlaylistStore> _log;
+        private readonly MethodResultHelper _resultHelper;
 
         public PlaylistStore(IConfiguration config, ILogger<PlaylistStore> logger)
         {
             _dbJsonConnectionString = config[Constants.AppSettingKeys.DBJsonPath];
             _log = logger;
+            _resultHelper = new MethodResultHelper(_log);
         }
 
-        public List<Playlist> GetPlaylists(PlaylistFilter filter)
+        public async Task<List<Video>> GetVideos(VideoPlaylistFilter filter)
         {
-            return GetPlaylistsAsQueryable(filter).ToList();
-        }
-
-        public List<Video> GetVideos(VideoPlaylistFilter filter)
-        {
-            return GetVideosAsQueryable(filter).ToList();
-        }
-
-        private IQueryable<Video> GetVideosAsQueryable(VideoPlaylistFilter filter)
-        {
-            var vids = TryGetDBFromFile().Videos.AsQueryable();
+            var vids = (await TryGetDBFromFile()).Videos;
             if (filter.Id != null && filter.Id > 0)
             {
-                vids = vids.Where(o => o.Id == filter.Id);
+                vids = vids.Where(o => o.Id == filter.Id).ToList();
             }
-            if (filter.Ids != null && filter.Ids.Any())
+            if (filter.Ids.IsNotNullOrEmpty())
             {
-                vids = vids.Where(o => filter.Ids.Contains(o.Id));
+                vids = vids.Where(o => filter.Ids.Contains(o.Id)).ToList();
             }
             return vids;
         }
 
-        private IQueryable<Playlist> GetPlaylistsAsQueryable(PlaylistFilter filter)
+        public async Task<List<Playlist>> GetPlaylists(PlaylistFilter filter)
         {
-            var playLists = TryGetDBFromFile().Playlists.AsQueryable();
+            var playLists = (await TryGetDBFromFile()).Playlists;
             if (filter.Id != null && filter.Id > 0)
             {
-                playLists = playLists.Where(o => o.ID == filter.Id);
+                playLists = playLists.Where(o => o.Id == filter.Id).ToList();
             }
             
-            if (filter.Ids != null && filter.Ids.Any())
+            if (filter.Ids.IsNotNullOrEmpty())
             {
-                playLists = playLists.Where(o => filter.Ids.Contains(o.ID));
+                playLists = playLists.Where(o => filter.Ids.Contains(o.Id)).ToList();
             }
             
             if(filter.VideoId != null && filter.VideoId > 0)
             {
-                playLists = playLists.Where(o => o.VideoIds.Contains(filter.VideoId.Value));
+                playLists = playLists.Where(o => o.VideoIds.IsNotNullOrEmpty() && o.VideoIds.Contains(filter.VideoId.Value)).ToList();
             }
 
             return playLists;
         }
 
-        public Playlist? GetPlaylistIfExists(int id)
+        public async Task<List<SimplePlaylist>> GetSimplePlaylists(PlaylistFilter filter)
         {
-            return GetPlaylistsAsQueryable(new PlaylistFilter { Id = id }).FirstOrDefault();
+            return (await GetPlaylists(filter)).Select(o => new SimplePlaylist(o)).ToList();
         }
 
-        public Video? GetVideoIfExists(int id)
+        public async Task<Playlist?> GetPlaylistIfExists(int id)
         {
-            return GetVideosAsQueryable(new VideoPlaylistFilter { Id = id }).FirstOrDefault();
+            return (await GetPlaylists(new PlaylistFilter { Id = id })).FirstOrDefault();
         }
 
-        public async Task<HttpStatusCode> AddPlaylistAsync(Playlist playlist)
+        public async Task<SimplePlaylist?> GetSimplePlaylistIfExists(int id)
+        {
+            return (await GetSimplePlaylists(new PlaylistFilter { Id = id })).FirstOrDefault();
+        }
+
+        public async Task<Video?> GetVideoIfExists(int id)
+        {
+            return (await GetVideos(new VideoPlaylistFilter { Id = id })).FirstOrDefault();
+        }
+
+        public async Task<SimplePlaylist?> AddPlaylistAsync(Playlist playlist)
         {
             var fs = GetVideoFileStreamFromFile();
             if (fs != null) 
             {
                 var db = JsonSerializer.Deserialize<PlaylistVideoDB>(fs);
-                playlist.ID = db.Playlists.Max(o => o.ID) + 1;
+                playlist.Id = db.Playlists.Max(o => o.Id) + 1;
                 db.Playlists.Add(playlist);
                 await SaveDBAsync(fs, db);
-                return HttpStatusCode.OK;
+                await fs.DisposeAsync();
+                return new SimplePlaylist(playlist);
             }
-            fs?.Dispose();
-            return HttpStatusCode.InternalServerError;
+            return null;
         }
 
-        public async Task<HttpStatusCode> AddVideoToPlaylistAsync(int videoId, int playlistId)
+        public async Task<List<int>?> AddVideoToPlaylistAsync(int videoId, int playlistId)
         {
             var fs = GetVideoFileStreamFromFile();
             if (fs != null)
             {
                 var db = JsonSerializer.Deserialize<PlaylistVideoDB>(fs);
-                var relPlaylist = db.Playlists.FirstOrDefault(o => o.ID == playlistId);
-                if(relPlaylist != null)
+                var relPlaylist = db.Playlists.FirstOrDefault(o=>o.Id == playlistId);
+                if (relPlaylist != null)
                 {
                     relPlaylist.VideoIds.Add(videoId);
                     await SaveDBAsync(fs, db);
-                    return HttpStatusCode.OK;
+                    return relPlaylist.VideoIds;
                 }
+                await fs.DisposeAsync();
             }
-            fs?.Dispose();
-            return HttpStatusCode.InternalServerError;
+            return null;
         }
 
-        public async Task<HttpStatusCode> UpdatePlaylistAsync(Playlist playlist)
+        public async Task<SimplePlaylist?> UpdatePlaylistAsync(SimplePlaylist playlist)
         {
             var fs = GetVideoFileStreamFromFile();
             if (fs != null)
             {
                 var db = JsonSerializer.Deserialize<PlaylistVideoDB>(fs);
-                var existingPlaylist = db.Playlists.FirstOrDefault(o => o.ID == playlist.ID);
+                var existingPlaylist = db.Playlists.FirstOrDefault(o => o.Id == playlist.Id);
                 if (existingPlaylist != null)
                 {
                     existingPlaylist.Name = playlist.Name;
                     existingPlaylist.Description = playlist.Description;
-                    existingPlaylist.VideoIds = playlist.VideoIds;
                     await SaveDBAsync(fs, db);
-                    return HttpStatusCode.OK;
+
+                    return playlist;
                 }
-                return HttpStatusCode.NotFound;
+                await fs.DisposeAsync();
             }
-            fs?.Dispose();
-            return HttpStatusCode.InternalServerError;
+            return null;
         }
 
-        public async Task<HttpStatusCode> RemovePlaylistAsync(int playlistId)
+        public async Task<bool> RemovePlaylistAsync(int playlistId)
         {
             var fs = GetVideoFileStreamFromFile();
             if (fs != null)
             {
                 var db = JsonSerializer.Deserialize<PlaylistVideoDB>(fs);
-                var relPlaylist = db.Playlists.FirstOrDefault(o => o.ID == playlistId);
-                if(relPlaylist != null)
+                var relPlaylist = db.Playlists.FirstOrDefault(o => o.Id == playlistId);
+                if (relPlaylist != null)
                 {
                     db.Playlists.Remove(relPlaylist);
                     await SaveDBAsync(fs, db);
-                    return HttpStatusCode.OK;
+                    return true;
                 }
+                await fs.DisposeAsync();
             }
-            fs?.Dispose();
-            return HttpStatusCode.InternalServerError;
+            return false;
         }
 
-        public async Task<HttpStatusCode> RemoveVideoFromPlaylistAsync(int videoId, int playlistId)
+        public async Task<List<int>?> RemoveVideoFromPlaylistAsync(int videoId, int playlistId)
         {
             var fs = GetVideoFileStreamFromFile();
             if (fs != null)
             {
                 var db = JsonSerializer.Deserialize<PlaylistVideoDB>(fs);
-                var relPlaylist = db.Playlists.FirstOrDefault(o => o.ID == playlistId);
-                if (relPlaylist != null)
+                var relPlaylist = db.Playlists.FirstOrDefault(o => o.Id == playlistId);
+                if (relPlaylist != null && relPlaylist.VideoIds.IsNotNullOrEmpty())
                 {
                     var relVideoId = relPlaylist.VideoIds.FirstOrDefault(o => o == videoId);
                     if(relVideoId > 0)
                     {
                         relPlaylist.VideoIds.Remove(relVideoId);
                         await SaveDBAsync(fs, db);
-                        return HttpStatusCode.OK;
+                        return relPlaylist.VideoIds;
                     }
                 }
+                await fs.DisposeAsync();
             }
-            fs?.Dispose();
-            return HttpStatusCode.InternalServerError;
+            return null;
         }
 
         private async Task SaveDBAsync(FileStream fs, PlaylistVideoDB db)
@@ -173,10 +175,10 @@ namespace ClickViewPracticalLibrary.Service
             fs.Position = 0;
             fs.SetLength(0);
             await fs.WriteAsync(data, 0, data.Length);
-            fs.Dispose();
+            await fs.DisposeAsync();
         }
 
-        private PlaylistVideoDB TryGetDBFromFile()
+        private async Task<PlaylistVideoDB> TryGetDBFromFile()
         {
             var fs = GetVideoFileStreamFromFile();
             if (fs == null)
@@ -186,17 +188,17 @@ namespace ClickViewPracticalLibrary.Service
             }
             
             var db = JsonSerializer.Deserialize<PlaylistVideoDB>(fs);
-            fs.Dispose();
+            await fs.DisposeAsync();
             return db;
         }
 
-        private FileStream GetVideoFileStreamFromFile()
+        private FileStream? GetVideoFileStreamFromFile()
         {
             return WaitForFile(_dbJsonConnectionString, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         }
 
         //https://stackoverflow.com/questions/50744/wait-until-file-is-unlocked-in-net/50800#50800
-        private FileStream WaitForFile(string fullPath, FileMode mode, FileAccess access, FileShare share)
+        private FileStream? WaitForFile(string fullPath, FileMode mode, FileAccess access, FileShare share)
         {
             for (int numTries = 0; numTries < Constants.DefaultValues.MaxFileTries; numTries++)
             {
